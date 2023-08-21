@@ -31,6 +31,9 @@ const resolvers = {
     createUser: async (_, { name, email }) => {
       return await userOperations.createUser(name, email);
     },
+    createPlaylist: async (_, { userId, name }) => {
+      return await playlistOperations.createPlaylist(userId, name);
+    }
   },
 };
 
