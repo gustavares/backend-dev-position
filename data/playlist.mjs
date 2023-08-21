@@ -38,6 +38,17 @@ const playlistOperations = {
     return {
       id: playlistSong['playlist_id']
     };
+  },
+  removeSong: async (songId, playlistId) => {
+    await knex('playlist_songs')
+      .where({
+        song_id: songId,
+        playlist_id: playlistId,
+      })
+      .del();
+    return {
+      id: playlistId
+    };
   }
 };
 

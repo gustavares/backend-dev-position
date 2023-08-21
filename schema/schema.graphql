@@ -33,4 +33,5 @@ type Mutation {
   deleteSong(id: ID!): Boolean
 
   addSongToPlaylist(songId: ID!, playlistId: ID!): Playlist
+  removeSongFromPlaylist(songId: ID!, playlistId: ID!): Playlist
 }

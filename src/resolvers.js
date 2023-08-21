@@ -48,7 +48,10 @@ const resolvers = {
     },
     addSongToPlaylist: async (_, { songId, playlistId }) => {
       return await playlistOperations.addSong(songId, playlistId);
-    }
+    },
+    removeSongFromPlaylist: async (_, { songId, playlistId }) => {
+      return await playlistOperations.removeSong(songId, playlistId);
+    },
   },
 };
 
