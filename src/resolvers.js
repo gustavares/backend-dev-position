@@ -36,6 +36,12 @@ const resolvers = {
     },
     deletePlaylist: async (_, { id }) => {
       return await playlistOperations.deletePlaylist(id);
+    },
+    createSong: async (_, { userId, name }) => {
+      return await songOperations.createSong(userId, name);
+    },
+    deleteSong: async (_, { id }) => {
+      return await songOperations.deleteSong(id);
     }
   },
 };
