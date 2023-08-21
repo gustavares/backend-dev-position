@@ -33,6 +33,9 @@ const resolvers = {
     },
     createPlaylist: async (_, { userId, name }) => {
       return await playlistOperations.createPlaylist(userId, name);
+    },
+    deletePlaylist: async (_, { id }) => {
+      return await playlistOperations.deletePlaylist(id);
     }
   },
 };

@@ -10,6 +10,13 @@ const playlistOperations = {
       .insert({ 'user_id': userId, name });
 
     return newPlaylist;
+  },
+  deletePlaylist: async (playlistId) => {
+    const deletedCount = await knex('playlists')
+      .where({ id: playlistId })
+      .del();
+
+    return deletedCount > 0;
   }
 };
 
