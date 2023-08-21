@@ -15,6 +15,16 @@ const resolvers = {
     }
   },
   User: {
+    async name(parent) {
+      if (parent.name) return parent.name;
+      const user = await userOperations.getUserById(parent.id);
+      return user.name;
+    },
+    async email(parent) {
+      if (parent.email) return parent.email;
+      const user = await userOperations.getUserById(parent.id);
+      return user.email;
+    },
     async playlists(parent) {
       return await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id)
     },
@@ -33,6 +43,9 @@ const resolvers = {
   Mutation: {
     createUser: async (_, { name, email }) => {
       return await userOperations.createUser(name, email);
+    },
+    updateUser: async (_, { id, input }) => {
+      return await userOperations.updateUser(id, input);
     },
     createPlaylist: async (_, { userId, name }) => {
       return await playlistOperations.createPlaylist(userId, name);

@@ -1,4 +1,4 @@
-import knex from '../lib/knex.js'; 
+import knex from '../lib/knex.js';
 
 const userOperations = {
   getUserById: async (id) => {
@@ -10,6 +10,13 @@ const userOperations = {
       .insert({ name, email });
 
     return newUser;
+  },
+  updateUser: async (id, input) => {
+    await knex('users')
+      .where('id', id)
+      .update(input);
+
+    return { id };
   },
 };
 

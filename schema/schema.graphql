@@ -25,6 +25,7 @@ type Query {
 
 type Mutation {
   createUser(name: String!, email: String!): User
+  updateUser(id: ID!, input: UserInput!): User
   
   createPlaylist(userId: ID!, name: String!): Playlist
   deletePlaylist(id: ID!): Boolean
@@ -34,4 +35,9 @@ type Mutation {
 
   addSongToPlaylist(songId: ID!, playlistId: ID!): Playlist
   removeSongFromPlaylist(songId: ID!, playlistId: ID!): Playlist
+}
+
+input UserInput {
+  name: String
+  email: String
 }
