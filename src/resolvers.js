@@ -23,8 +23,11 @@ const resolvers = {
     }
   },
   Playlist: {
+    async name(parent) {
+      return await playlistOperations.getName(parent.id);
+    },
     async songs(parent) {
-      return await songOperations.getSongsByPlaylistId(parent.id)
+      return await playlistOperations.getSongs(parent.id)
     }
   },
   Mutation: {
@@ -42,6 +45,9 @@ const resolvers = {
     },
     deleteSong: async (_, { id }) => {
       return await songOperations.deleteSong(id);
+    },
+    addSongToPlaylist: async (_, { songId, playlistId }) => {
+      return await playlistOperations.addSong(songId, playlistId);
     }
   },
 };

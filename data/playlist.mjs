@@ -1,6 +1,18 @@
 import knex from '../lib/knex.js';
 
 const playlistOperations = {
+  getName: async (playlistId) => {
+    const [{ name }] = await knex('playlists')
+      .select('playlists.name')
+      .where({ 'id': playlistId });
+    return name;
+  },
+  getSongs: async (playlistId) => {
+    return await knex('playlist_songs')
+      .select('songs.*')
+      .join('songs', 'songs.id', 'playlist_songs.song_id')
+      .where({ 'playlist_id ': playlistId })
+  },
   getPlaylistsByUserIdOrderedByName: async (userId) => {
     return await knex('playlists').where({ 'user_id': userId }).orderBy('name', 'asc');
   },
@@ -17,6 +29,15 @@ const playlistOperations = {
       .del();
 
     return deletedCount > 0;
+  },
+  addSong: async (songId, playlistId) => {
+    const [playlistSong] = await knex('playlist_songs')
+      .returning('playlist_id')
+      .insert({ playlist_id: playlistId, song_id: songId });
+
+    return {
+      id: playlistSong['playlist_id']
+    };
   }
 };
 
