@@ -96,6 +96,14 @@ const resolvers = {
       return await songOperations.createSong(userId, name);
     },
     deleteSong: async (_, { id }) => {
+      const [songToRemove] = await songOperations.getById(id);
+      const cacheKey = `user:${song['user_id']}`;
+      const cachedUser = await redisCache.get(cacheKey);
+      if (cachedUser && cachedUser.songs) {
+        const songs = cachedUser.songs.filter(song => song.id !== songToRemove.id);
+        cachedUser.songs = songs;
+        await redisCache.set(cacheKey, cachedUser);
+      }
       return await songOperations.deleteSong(id);
     },
     addSongToPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
