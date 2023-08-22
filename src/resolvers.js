@@ -8,11 +8,11 @@ const resolvers = {
     user: async (_, { id }, { redisCache }) => {
       const cachedUser = await redisCache.get(`user:${id}`);
       if (cachedUser) {
-        return JSON.parse(cachedUser);
+        return cachedUser;
       }
 
       const user = await userOperations.getUserById(id);
-      await redisCache.set(`user:${id}`, JSON.stringify(user));
+      await redisCache.set(`user:${id}`, user);
 
       return user;
     },
@@ -40,7 +40,7 @@ const resolvers = {
       const playlists = await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id);
       const updatedUser = { ...parent, playlists };
 
-      await redisCache.set(`user:${parent.id}`, JSON.stringify(updatedUser));
+      await redisCache.set(`user:${parent.id}`, updatedUser);
 
       return playlists;
     },
@@ -50,7 +50,7 @@ const resolvers = {
       const songs = await songOperations.getSongsByUserId(parent.id);
       const updatedUser = { ...parent, songs };
 
-      await redisCache.set(`user:${parent.id}`, JSON.stringify(updatedUser));
+      await redisCache.set(`user:${parent.id}`, updatedUser);
 
       return songs;
     },
@@ -83,23 +83,16 @@ const resolvers = {
       return await playlistOperations.deletePlaylist(id);
     },
     createSong: async (_, { userId, name }, { redisCache }) => {
-      let cachedUser = await redisCache.get(`user:${userId}`);
+      const cachedUser = await redisCache.get(`user:${userId}`) || { id: userId };
       const songId = uuidv4();
       const newSong = {
         id: songId,
         name
       };
+      const songs = cachedUser.songs || [];
+      cachedUser.songs = redisCache.insertObjectIntoSortedArray(songs, newSong);
 
-      if (cachedUser) {
-        cachedUser = JSON.parse(cachedUser);
-        if (cachedUser.songs) {
-          cachedUser.songs = insertObjectIntoSortedArray(cachedUser.songs, newSong);
-        } else {
-          cachedUser.songs = [newSong];
-        }
-
-        await redisCache.set(`user:${userId}`, JSON.stringify(cachedUser));
-      }
+      await redisCache.set(`user:${userId}`, cachedUser);
       return await songOperations.createSong(userId, name);
     },
     deleteSong: async (_, { id }) => {
@@ -114,14 +107,6 @@ const resolvers = {
   },
 };
 
-function insertObjectIntoSortedArray(sortedArray, object) {
-  let index = 0;
-  while (index < sortedArray.length && object.name > sortedArray[index].name) {
-    index++;
-  }
-  sortedArray.splice(index, 0, object);
 
-  return sortedArray;
-}
 
 export default resolvers;
