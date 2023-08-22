@@ -1,6 +1,9 @@
 import knex from '../lib/knex.js';
 
 const playlistOperations = {
+  getById: async (playlistId) => {
+    return await knex('playlists').where({ 'id': playlistId });
+  },
   getName: async (playlistId) => {
     const [{ name }] = await knex('playlists')
       .select('playlists.name')

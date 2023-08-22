@@ -35,8 +35,6 @@ const resolvers = {
       return user.email;
     },
     async playlists(parent, _, { redisCache }) {
-      if (parent.playlists) return parent.playlists;
-
       const playlists = await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id);
       const updatedUser = { ...parent, playlists };
 
@@ -45,8 +43,6 @@ const resolvers = {
       return playlists;
     },
     async songs(parent, _, { redisCache }) {
-      if (parent.songs) return parent.songs;
-
       const songs = await songOperations.getSongsByUserId(parent.id);
       const updatedUser = { ...parent, songs };
 
@@ -59,8 +55,16 @@ const resolvers = {
     async name(parent) {
       return await playlistOperations.getName(parent.id);
     },
-    async songs(parent) {
-      return await playlistOperations.getSongs(parent.id)
+    async songs(parent, _, { redisCache }) {
+      const { user_id: userId } = parent;
+      const songs = await playlistOperations.getSongs(parent.id);
+
+      const updatedPlaylist = { ...parent, songs };
+      const cachedUser = redisCache.get(`user:${userId}`) || { id: userId };
+      cachedUser.playlists = redisCache.insertObjectIntoSortedArray(cachedUser.playlists || [], updatedPlaylist);
+      await redisCache.set(`user:${userId}`, cachedUser);
+
+      return songs
     }
   },
   Mutation: {
@@ -107,6 +111,26 @@ const resolvers = {
       return await songOperations.deleteSong(id);
     },
     addSongToPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
+      const [playlist] = await playlistOperations.getById(playlistId);
+      const [song] = await songOperations.getById(songId);
+
+      const userId = playlist['user_id'];
+      const cachedUser = await redisCache.get(`user:${userId}`) || { id: userId };
+      const cachedPlaylists = cachedUser.playlists || [];
+      const indexFound = cachedPlaylists.findIndex(p => p.id === playlistId);
+
+      if (indexFound !== -1) {
+        const cachedPlaylistSongs = cachedPlaylists[indexFound].songs || [];
+        cachedPlaylists[indexFound].songs = redisCache.insertObjectIntoSortedArray(cachedPlaylistSongs, song);
+      } else {
+        cachedPlaylists.push({
+          ...playlist,
+          songs: [song],
+        });
+      }
+
+      cachedUser.playlists = cachedPlaylists;
+      await redisCache.set(`user:${userId}`, cachedUser);
       return await playlistOperations.addSong(songId, playlistId);
     },
     removeSongFromPlaylist: async (_, { songId, playlistId }) => {
