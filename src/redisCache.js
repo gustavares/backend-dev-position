@@ -11,6 +11,8 @@ class RedisCache {
   }
 
   async set(key, value) {
+    console.log("SETTING CACHE")
+    console.log(value)
     await this.redis.set(key, JSON.stringify(value));
   }
 
@@ -22,11 +24,16 @@ class RedisCache {
    * Method to keep lists sorted
    */
   insertObjectIntoSortedArray(sortedArray, object) {
-    let index = 0;
-    while (index < sortedArray.length && object.name > sortedArray[index].name) {
-      index++;
+    const existingIndex = sortedArray.findIndex(item => item.id === object.id);
+    if (existingIndex !== -1) {
+      sortedArray[existingIndex] = object;
+    } else {
+      let index = 0;
+      while (index < sortedArray.length && object.name > sortedArray[index].name) {
+        index++;
+      }
+      sortedArray.splice(index, 0, object);
     }
-    sortedArray.splice(index, 0, object);
 
     return sortedArray;
   }
