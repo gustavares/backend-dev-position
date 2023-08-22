@@ -1,13 +1,13 @@
 import playlistOperations from '../data/playlist.mjs';
 import songOperations from '../data/song.mjs';
 import userOperations from '../data/user.mjs';
+import { v4 as uuidv4 } from 'uuid';
 
 const resolvers = {
   Query: {
     user: async (_, { id }, { redisCache }) => {
       const cachedUser = await redisCache.get(`user:${id}`);
       if (cachedUser) {
-        console.log('CACHED', JSON.parse(cachedUser))
         return JSON.parse(cachedUser);
       }
 
@@ -82,13 +82,30 @@ const resolvers = {
     deletePlaylist: async (_, { id }) => {
       return await playlistOperations.deletePlaylist(id);
     },
-    createSong: async (_, { userId, name }) => {
+    createSong: async (_, { userId, name }, { redisCache }) => {
+      let cachedUser = await redisCache.get(`user:${userId}`);
+      const songId = uuidv4();
+      const newSong = {
+        id: songId,
+        name
+      };
+
+      if (cachedUser) {
+        cachedUser = JSON.parse(cachedUser);
+        if (cachedUser.songs) {
+          cachedUser.songs = insertObjectIntoSortedArray(cachedUser.songs, newSong);
+        } else {
+          cachedUser.songs = [newSong];
+        }
+
+        await redisCache.set(`user:${userId}`, JSON.stringify(cachedUser));
+      }
       return await songOperations.createSong(userId, name);
     },
     deleteSong: async (_, { id }) => {
       return await songOperations.deleteSong(id);
     },
-    addSongToPlaylist: async (_, { songId, playlistId }) => {
+    addSongToPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
       return await playlistOperations.addSong(songId, playlistId);
     },
     removeSongFromPlaylist: async (_, { songId, playlistId }) => {
@@ -96,5 +113,15 @@ const resolvers = {
     },
   },
 };
+
+function insertObjectIntoSortedArray(sortedArray, object) {
+  let index = 0;
+  while (index < sortedArray.length && object.name > sortedArray[index].name) {
+    index++;
+  }
+  sortedArray.splice(index, 0, object);
+
+  return sortedArray;
+}
 
 export default resolvers;

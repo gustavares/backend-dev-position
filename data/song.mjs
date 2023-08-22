@@ -4,10 +4,10 @@ const songOperations = {
   getSongsByUserId: async (userId) => {
     return await knex('songs').where({ 'user_id': userId }).orderBy('name', 'asc');
   },
-  createSong: async (userId, name) => {
+  createSong: async (userId, songId, name) => {
     const [newSong] = await knex('songs')
       .returning('*')
-      .insert({ name, 'user_id': userId });
+      .insert({ id: songId, name, 'user_id': userId });
 
     return newSong;
   },
