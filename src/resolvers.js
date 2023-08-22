@@ -96,6 +96,10 @@ const resolvers = {
     },
     deletePlaylist: async (_, { id }, { redisCache }) => {
       const [playlistToRemove] = await playlistOperations.getById(id);
+      if (!playlist) {
+        throw new Error(`Playlist with ID ${playlistId} does not exist.`);
+      }
+
       const cacheKey = `user:${playlistToRemove['user_id']}`;
       const cachedUser = await redisCache.get(cacheKey);
 
@@ -121,6 +125,9 @@ const resolvers = {
     },
     deleteSong: async (_, { id }, { redisCache }) => {
       const [songToRemove] = await songOperations.getById(id);
+      if (!song) {
+        throw new Error(`Song with ID ${songId} does not exist.`);
+      }
 
       const userId = songToRemove['user_id'];
       await redisCache.removeSongFromUser(userId, id);
@@ -134,7 +141,14 @@ const resolvers = {
     },
     addSongToPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
       const [playlist] = await playlistOperations.getById(playlistId);
+      if (!playlist) {
+        throw new Error(`Playlist with ID ${playlistId} does not exist.`);
+      }
+
       const [song] = await songOperations.getById(songId);
+      if (!song) {
+        throw new Error(`Song with ID ${songId} does not exist.`);
+      }
 
       const userId = playlist['user_id'];
       const cachedUser = await redisCache.get(`user:${userId}`) || { id: userId };
@@ -161,6 +175,9 @@ const resolvers = {
     },
     removeSongFromPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
       const [playlist] = await playlistOperations.getById(playlistId);
+      if (!playlist) {
+        throw new Error(`Playlist with ID ${playlistId} does not exist.`);
+      }
 
       const userId = playlist['user_id'];
       await redisCache.removeSongFromPlaylist(userId, playlistId, songId);
