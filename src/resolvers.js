@@ -119,7 +119,7 @@ const resolvers = {
       await redisCache.set(`user:${userId}`, cachedUser);
       return await songOperations.createSong(userId, name);
     },
-    deleteSong: async (_, { id }) => {
+    deleteSong: async (_, { id }, { redisCache }) => {
       const [songToRemove] = await songOperations.getById(id);
       const cacheKey = `user:${songToRemove['user_id']}`;
       const cachedUser = await redisCache.get(cacheKey);

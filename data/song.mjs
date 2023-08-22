@@ -15,6 +15,9 @@ const songOperations = {
     return newSong;
   },
   deleteSong: async (songId) => {
+    await knex('playlist_songs')
+      .where({ song_id: songId })
+      .del();
     const deletedCount = await knex('songs')
       .where({ id: songId })
       .del();
