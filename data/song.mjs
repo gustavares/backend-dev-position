@@ -2,7 +2,7 @@ import knex from '../lib/knex.js';
 
 const songOperations = {
   getSongsByUserId: async (userId) => {
-    return await knex('songs').where({ 'user_id': userId });
+    return await knex('songs').where({ 'user_id': userId }).orderBy('name', 'asc');
   },
   createSong: async (userId, name) => {
     const [newSong] = await knex('songs')
