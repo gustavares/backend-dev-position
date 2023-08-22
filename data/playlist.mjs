@@ -27,6 +27,10 @@ const playlistOperations = {
     return newPlaylist;
   },
   deletePlaylist: async (playlistId) => {
+    await knex('playlist_songs')
+      .where({ playlist_id: playlistId })
+      .del();
+
     const deletedCount = await knex('playlists')
       .where({ id: playlistId })
       .del();

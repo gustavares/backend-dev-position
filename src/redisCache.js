@@ -11,8 +11,6 @@ class RedisCache {
   }
 
   async set(key, value) {
-    console.log("SETTING CACHE")
-    console.log(value)
     await this.redis.set(key, JSON.stringify(value));
   }
 

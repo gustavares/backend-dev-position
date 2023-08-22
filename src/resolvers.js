@@ -81,10 +81,29 @@ const resolvers = {
 
       return user;
     },
-    createPlaylist: async (_, { userId, name }) => {
+    createPlaylist: async (_, { userId, name }, { redisCache }) => {
+      const cachedUser = await redisCache.get(`user:${userId}`) || { id: userId };
+      const playlistId = uuidv4();
+      const newPlaylist = {
+        id: playlistId,
+        name
+      };
+      const playlists = cachedUser.playlists || [];
+      cachedUser.playlists = redisCache.insertObjectIntoSortedArray(playlists, newPlaylist);
+
+      await redisCache.set(`user:${userId}`, cachedUser);
       return await playlistOperations.createPlaylist(userId, name);
     },
-    deletePlaylist: async (_, { id }) => {
+    deletePlaylist: async (_, { id }, { redisCache }) => {
+      const [playlistToRemove] = await playlistOperations.getById(id);
+      const cacheKey = `user:${playlistToRemove['user_id']}`;
+      const cachedUser = await redisCache.get(cacheKey);
+
+      if (cachedUser && cachedUser.playlists) {
+        const playlists = cachedUser.playlists.filter(song => song.id !== playlistToRemove.id);
+        cachedUser.playlists = playlists;
+        await redisCache.set(cacheKey, cachedUser);
+      }
       return await playlistOperations.deletePlaylist(id);
     },
     createSong: async (_, { userId, name }, { redisCache }) => {
@@ -102,7 +121,7 @@ const resolvers = {
     },
     deleteSong: async (_, { id }) => {
       const [songToRemove] = await songOperations.getById(id);
-      const cacheKey = `user:${song['user_id']}`;
+      const cacheKey = `user:${songToRemove['user_id']}`;
       const cachedUser = await redisCache.get(cacheKey);
 
       if (cachedUser && cachedUser.songs) {
