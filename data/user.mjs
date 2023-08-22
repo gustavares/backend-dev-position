@@ -12,11 +12,11 @@ const userOperations = {
     return newUser;
   },
   updateUser: async (id, input) => {
-    await knex('users')
+    const updated = await knex('users')
       .where('id', id)
       .update(input);
-
-    return { id };
+    if (updated > 0) return { id };
+    return null;
   },
 };
 
