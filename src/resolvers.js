@@ -35,7 +35,6 @@ const resolvers = {
       return user.email;
     },
     async playlists(parent, _, { redisCache }) {
-      console.log('playlists resolver')
       const playlists = await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id);
       const updatedUser = { ...parent, playlists };
 
@@ -57,8 +56,6 @@ const resolvers = {
       return await playlistOperations.getName(parent.id);
     },
     async songs(parent, _, { redisCache }) {
-      console.log("SONGS RESOLVER")
-      console.log('parent', parent);
       const userId = parent['user_id'];
       const songs = await playlistOperations.getSongs(parent.id);
 
@@ -107,11 +104,13 @@ const resolvers = {
       const [songToRemove] = await songOperations.getById(id);
       const cacheKey = `user:${song['user_id']}`;
       const cachedUser = await redisCache.get(cacheKey);
+
       if (cachedUser && cachedUser.songs) {
         const songs = cachedUser.songs.filter(song => song.id !== songToRemove.id);
         cachedUser.songs = songs;
         await redisCache.set(cacheKey, cachedUser);
       }
+
       return await songOperations.deleteSong(id);
     },
     addSongToPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
