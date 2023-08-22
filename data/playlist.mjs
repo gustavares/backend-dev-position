@@ -19,6 +19,13 @@ const playlistOperations = {
   getPlaylistsByUserIdOrderedByName: async (userId) => {
     return await knex('playlists').where({ 'user_id': userId }).orderBy('name', 'asc');
   },
+  getPlaylistIdsContainingSong: async (songId) => {
+    return await knex('playlist_songs')
+      .select('playlist_id')
+      .where('song_id', songId)
+      .distinct()
+      .pluck('playlist_id');
+  },
   createPlaylist: async (userId, name) => {
     const [newPlaylist] = await knex('playlists')
       .returning('*')
