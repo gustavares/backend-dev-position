@@ -35,6 +35,7 @@ const resolvers = {
       return user.email;
     },
     async playlists(parent, _, { redisCache }) {
+      console.log('playlists resolver')
       const playlists = await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id);
       const updatedUser = { ...parent, playlists };
 
@@ -56,16 +57,19 @@ const resolvers = {
       return await playlistOperations.getName(parent.id);
     },
     async songs(parent, _, { redisCache }) {
-      const { user_id: userId } = parent;
+      console.log("SONGS RESOLVER")
+      console.log('parent', parent);
+      const userId = parent['user_id'];
       const songs = await playlistOperations.getSongs(parent.id);
 
       const updatedPlaylist = { ...parent, songs };
-      const cachedUser = redisCache.get(`user:${userId}`) || { id: userId };
+      const cachedUser = await redisCache.get(`user:${userId}`) || { id: userId };
       cachedUser.playlists = redisCache.insertObjectIntoSortedArray(cachedUser.playlists || [], updatedPlaylist);
+
       await redisCache.set(`user:${userId}`, cachedUser);
 
       return songs
-    }
+    },
   },
   Mutation: {
     createUser: async (_, { name, email }) => {
@@ -131,9 +135,27 @@ const resolvers = {
 
       cachedUser.playlists = cachedPlaylists;
       await redisCache.set(`user:${userId}`, cachedUser);
-      return await playlistOperations.addSong(songId, playlistId);
+      const updatedPlaylist = await playlistOperations.addSong(songId, playlistId);
+      return {
+        ...updatedPlaylist,
+        user_id: userId
+      }
     },
-    removeSongFromPlaylist: async (_, { songId, playlistId }) => {
+    removeSongFromPlaylist: async (_, { songId, playlistId }, { redisCache }) => {
+      const [playlist] = await playlistOperations.getById(playlistId);
+
+      const userId = playlist['user_id'];
+      const cachedUser = await redisCache.get(`user:${userId}`);
+      if (cachedUser && cachedUser.playlists) {
+        const indexFound = cachedUser.playlists.findIndex(p => p.id === playlistId);
+        if (indexFound !== -1) {
+          const cachedPlaylistSongs = cachedUser.playlists[indexFound].songs || [];
+          const updatedPlaylistSongs = cachedPlaylistSongs.filter(s => s.id !== songId);
+          cachedUser.playlists[indexFound].songs = updatedPlaylistSongs;
+
+          await redisCache.set(`user:${userId}`, cachedUser);
+        }
+      }
       return await playlistOperations.removeSong(songId, playlistId);
     },
   },
