@@ -4,8 +4,17 @@ import userOperations from '../data/user.mjs';
 
 const resolvers = {
   Query: {
-    user: async (_, { id }) => {
-      return await userOperations.getUserById(id);
+    user: async (_, { id }, { redisCache }) => {
+      const cachedUser = await redisCache.get(`user:${id}`);
+      if (cachedUser) {
+        console.log('CACHED', JSON.parse(cachedUser))
+        return JSON.parse(cachedUser);
+      }
+
+      const user = await userOperations.getUserById(id);
+      await redisCache.set(`user:${id}`, JSON.stringify(user));
+
+      return user;
     },
     songs: async (_, { userId }) => {
       return await songOperations.getSongsByUserId(userId);
@@ -25,12 +34,26 @@ const resolvers = {
       const user = await userOperations.getUserById(parent.id);
       return user.email;
     },
-    async playlists(parent) {
-      return await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id)
+    async playlists(parent, _, { redisCache }) {
+      if (parent.playlists) return parent.playlists;
+
+      const playlists = await playlistOperations.getPlaylistsByUserIdOrderedByName(parent.id);
+      const updatedUser = { ...parent, playlists };
+
+      await redisCache.set(`user:${parent.id}`, JSON.stringify(updatedUser));
+
+      return playlists;
     },
-    async songs(parent) {
-      return await songOperations.getSongsByUserId(parent.id)
-    }
+    async songs(parent, _, { redisCache }) {
+      if (parent.songs) return parent.songs;
+
+      const songs = await songOperations.getSongsByUserId(parent.id);
+      const updatedUser = { ...parent, songs };
+
+      await redisCache.set(`user:${parent.id}`, JSON.stringify(updatedUser));
+
+      return songs;
+    },
   },
   Playlist: {
     async name(parent) {
@@ -44,8 +67,14 @@ const resolvers = {
     createUser: async (_, { name, email }) => {
       return await userOperations.createUser(name, email);
     },
-    updateUser: async (_, { id, input }) => {
-      return await userOperations.updateUser(id, input);
+    updateUser: async (_, { id, input }, { redisCache }) => {
+      const user = await userOperations.updateUser(id, input);
+
+      if (user && 'email' in input) {
+        await redisCache.del(`user:${id}`);
+      }
+
+      return user;
     },
     createPlaylist: async (_, { userId, name }) => {
       return await playlistOperations.createPlaylist(userId, name);
