@@ -13,6 +13,7 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: postgres://postgres:password@postgres:5432/db
+      REDIS_URL: redis://redis:6379
     depends_on:
       - postgres
 
@@ -26,6 +27,12 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data3
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    command: redis-server
 
 volumes:
   pgdata:

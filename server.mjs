@@ -5,14 +5,17 @@ import resolvers from './src/resolvers.js';
 import knex from 'knex';
 import knexConfig from './knexfile.js';
 import dotenv from 'dotenv';
+import Redis from 'ioredis';
 dotenv.config();
 const typeDefs = readFileSync('./schema/schema.graphql', 'utf8');
 
 export const app = express();
+const redis = new Redis(process.env.REDIS_URL);
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  context: () => ({ redisCache: redis })
 });
 
 async function startServer() {
